@@ -264,7 +264,7 @@ class BrebornApp {
     this.autopilotIndex++;
 
     if (this.autopilotIndex < total) {
-      const delaySeconds = parseInt(this.autoDelay.value) || 8;
+      const delaySeconds = Math.max(20, parseInt(this.autoDelay.value) || 25);
       let remaining = delaySeconds;
       this.autopilotCountdown.textContent = `⏳ Siguiente envío en ${remaining} segundos...`;
 
