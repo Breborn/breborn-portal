@@ -1,6 +1,6 @@
 /**
  * BREBORN SALES HUB • APP LOGIC
- * Standalone client-side application for GitHub Pages
+ * Standalone client-side application for GitHub Pages with Autopilot
  */
 
 // Dataset embebido con 148 locales de Viña del Mar y Valparaíso
@@ -12,6 +12,13 @@ class BrebornApp {
     this.statuses = JSON.parse(localStorage.getItem('breborn_leads_status') || '{}');
     this.notes = JSON.parse(localStorage.getItem('breborn_leads_notes') || '{}');
     this.activePitchLead = null;
+
+    // Autopilot state
+    this.isAutopilotRunning = false;
+    this.autopilotTimer = null;
+    this.countdownTimer = null;
+    this.autopilotQueue = [];
+    this.autopilotIndex = 0;
 
     this.initDOM();
     this.initTheme();
@@ -40,6 +47,17 @@ class BrebornApp {
     this.themeToggle = document.getElementById('themeToggle');
     this.exportCsvBtn = document.getElementById('exportCsvBtn');
     this.resetStorageBtn = document.getElementById('resetStorageBtn');
+
+    // Autopilot DOM
+    this.startAutopilotBtn = document.getElementById('startAutopilotBtn');
+    this.stopAutopilotBtn = document.getElementById('stopAutopilotBtn');
+    this.autoBatchSize = document.getElementById('autoBatchSize');
+    this.autoDelay = document.getElementById('autoDelay');
+    this.autopilotStatusBox = document.getElementById('autopilotStatusBox');
+    this.autopilotCurrentBiz = document.getElementById('autopilotCurrentBiz');
+    this.autopilotProgressText = document.getElementById('autopilotProgressText');
+    this.autopilotProgressBar = document.getElementById('autopilotProgressBar');
+    this.autopilotCountdown = document.getElementById('autopilotCountdown');
 
     // Modal
     this.pitchModal = document.getElementById('pitchModal');
@@ -111,6 +129,14 @@ class BrebornApp {
     this.webFilter.addEventListener('change', () => this.render());
     this.statusFilter.addEventListener('change', () => this.render());
 
+    // Autopilot buttons
+    if (this.startAutopilotBtn) {
+      this.startAutopilotBtn.addEventListener('click', () => this.startAutopilot());
+    }
+    if (this.stopAutopilotBtn) {
+      this.stopAutopilotBtn.addEventListener('click', () => this.stopAutopilot());
+    }
+
     this.themeToggle.addEventListener('click', () => {
       const isLight = document.body.classList.contains('theme-light');
       if (isLight) {
@@ -152,6 +178,116 @@ class BrebornApp {
     });
   }
 
+  /* ================= PILOTO AUTOMÁTICO ================= */
+
+  startAutopilot() {
+    if (this.isAutopilotRunning) return;
+
+    // Filter leads with WhatsApp that haven't been contacted yet
+    const pendingLeads = this.leads.filter(l => l.has_whatsapp && (l.status === 'Nuevo' || !l.status));
+
+    if (pendingLeads.length === 0) {
+      alert('¡Excelente trabajo! No quedan locales con WhatsApp en estado "Nuevo". Todos ya han sido contactados o no disponen de WhatsApp directo.');
+      return;
+    }
+
+    const batchSizeSetting = this.autoBatchSize.value;
+    const limit = batchSizeSetting === 'ALL' ? pendingLeads.length : parseInt(batchSizeSetting);
+    this.autopilotQueue = pendingLeads.slice(0, limit);
+    this.autopilotIndex = 0;
+
+    this.isAutopilotRunning = true;
+    this.startAutopilotBtn.style.display = 'none';
+    this.stopAutopilotBtn.style.display = 'inline-flex';
+    this.autopilotStatusBox.style.display = 'flex';
+
+    this.processNextAutopilotItem();
+  }
+
+  stopAutopilot() {
+    this.isAutopilotRunning = false;
+    if (this.autopilotTimer) clearTimeout(this.autopilotTimer);
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+
+    this.startAutopilotBtn.style.display = 'inline-flex';
+    this.stopAutopilotBtn.style.display = 'none';
+    this.autopilotCountdown.textContent = '⏹ Envío automático detenido.';
+    this.autopilotCurrentBiz.textContent = 'Pausado';
+  }
+
+  processNextAutopilotItem() {
+    if (!this.isAutopilotRunning) return;
+
+    if (this.autopilotIndex >= this.autopilotQueue.length) {
+      // Finished all in batch
+      this.isAutopilotRunning = false;
+      this.startAutopilotBtn.style.display = 'inline-flex';
+      this.stopAutopilotBtn.style.display = 'none';
+      this.autopilotProgressBar.style.width = '100%';
+      this.autopilotProgressText.textContent = `${this.autopilotQueue.length} / ${this.autopilotQueue.length}`;
+      this.autopilotCurrentBiz.textContent = '🎉 ¡Lote de envíos completado con éxito!';
+      this.autopilotCountdown.textContent = `Se contactaron ${this.autopilotQueue.length} locales y se marcaron en el panel.`;
+      return;
+    }
+
+    const lead = this.autopilotQueue[this.autopilotIndex];
+    const total = this.autopilotQueue.length;
+    const currentNum = this.autopilotIndex + 1;
+
+    // Update progress display
+    const pct = Math.round((currentNum / total) * 100);
+    this.autopilotProgressBar.style.width = `${pct}%`;
+    this.autopilotProgressText.textContent = `${currentNum} / ${total}`;
+    this.autopilotCurrentBiz.innerHTML = `🚀 Enviando a: <strong>${lead.name}</strong> (${lead.whatsapp}) • ${lead.category} (${lead.city})`;
+
+    // 1. Open WhatsApp tab/window
+    try {
+      window.open(lead.wa_url, '_blank');
+    } catch (e) {
+      console.error('Error abriendo ventana:', e);
+    }
+
+    // 2. Mark as Contacted / Mensaje Enviado immediately
+    this.updateLeadStatus(lead.id, 'Mensaje Enviado');
+
+    // 3. Highlight the lead card on screen
+    const card = document.getElementById(lead.id);
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.transition = 'all 0.5s ease';
+      card.style.boxShadow = '0 0 25px rgba(34, 197, 94, 0.8)';
+      setTimeout(() => {
+        card.style.boxShadow = '';
+      }, 3000);
+    }
+
+    this.autopilotIndex++;
+
+    if (this.autopilotIndex < total) {
+      const delaySeconds = parseInt(this.autoDelay.value) || 8;
+      let remaining = delaySeconds;
+      this.autopilotCountdown.textContent = `⏳ Siguiente envío en ${remaining} segundos...`;
+
+      this.countdownTimer = setInterval(() => {
+        remaining--;
+        if (remaining > 0) {
+          this.autopilotCountdown.textContent = `⏳ Siguiente envío en ${remaining} segundos...`;
+        } else {
+          clearInterval(this.countdownTimer);
+        }
+      }, 1000);
+
+      this.autopilotTimer = setTimeout(() => {
+        this.processNextAutopilotItem();
+      }, delaySeconds * 1000);
+    } else {
+      // Finished
+      setTimeout(() => this.processNextAutopilotItem(), 1500);
+    }
+  }
+
+  /* ================= FILTROS Y RENDER ================= */
+
   getFilteredLeads() {
     const query = this.searchInput.value.toLowerCase().trim();
     const cat = this.categoryFilter.value;
@@ -185,7 +321,7 @@ class BrebornApp {
     const total = this.leads.length;
     const waCount = this.leads.filter(l => l.has_whatsapp).length;
     const sinWebCount = this.leads.filter(l => !l.has_website).length;
-    const contactados = this.leads.filter(l => l.status !== 'Nuevo').length;
+    const contactados = this.leads.filter(l => l.status === 'Mensaje Enviado' || l.status === 'Interesado' || l.status === 'En el Bucle').length;
 
     this.kpiTotal.textContent = total;
     this.kpiWa.textContent = waCount;
@@ -229,7 +365,7 @@ class BrebornApp {
       const waBtn = cardEl.querySelector('.btn-whatsapp');
       if (waBtn) {
         waBtn.addEventListener('click', () => {
-          if (lead.status === 'Nuevo') {
+          if (lead.status === 'Nuevo' || !lead.status) {
             this.updateLeadStatus(lead.id, 'Mensaje Enviado');
           }
         });
@@ -239,7 +375,8 @@ class BrebornApp {
 
   createLeadCardHTML(lead) {
     const isGold = lead.has_whatsapp && !lead.has_website;
-    const statusClass = `status-${lead.status.toLowerCase().replace(/\s+/g, '-')}`;
+    const isContacted = lead.status === 'Mensaje Enviado';
+    const statusClass = `status-${(lead.status || 'nuevo').toLowerCase().replace(/\s+/g, '-')}`;
 
     const catEmoji = {
       'Peluquería y Belleza': '💇',
@@ -250,13 +387,18 @@ class BrebornApp {
     }[lead.category] || '🏢';
 
     return `
-      <div id="${lead.id}" class="lead-card ${isGold ? 'gold-lead' : ''}">
+      <div id="${lead.id}" class="lead-card ${isGold ? 'gold-lead' : ''} ${isContacted ? 'card-contacted' : ''}">
         <div class="lead-card-header">
           <div class="lead-title-area">
             <h3 class="lead-title">${lead.name}</h3>
             <div class="lead-badges">
               <span class="badge badge-category">${catEmoji} ${lead.category}</span>
               <span class="badge badge-city">📍 ${lead.city}</span>
+              ${
+                isContacted
+                  ? '<span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);">✓ Contactado</span>'
+                  : ''
+              }
               ${
                 !lead.has_website
                   ? '<span class="badge badge-noweb">🔥 Sin Web</span>'
@@ -280,7 +422,7 @@ class BrebornApp {
         <div class="lead-status-row">
           <span class="status-label">Estado:</span>
           <select class="status-select ${statusClass}">
-            <option value="Nuevo" ${lead.status === 'Nuevo' ? 'selected' : ''}>⚪ Nuevo</option>
+            <option value="Nuevo" ${lead.status === 'Nuevo' || !lead.status ? 'selected' : ''}>⚪ Nuevo</option>
             <option value="Mensaje Enviado" ${lead.status === 'Mensaje Enviado' ? 'selected' : ''}>💬 Mensaje Enviado</option>
             <option value="Interesado" ${lead.status === 'Interesado' ? 'selected' : ''}>⭐ Interesado</option>
             <option value="En el Bucle" ${lead.status === 'En el Bucle' ? 'selected' : ''}>🎉 En el Bucle</option>
@@ -295,7 +437,7 @@ class BrebornApp {
           ${
             lead.has_whatsapp
               ? `<a href="${lead.wa_url}" target="_blank" rel="noopener" class="btn btn-whatsapp" title="Abrir chat en WhatsApp con pitch listo">
-                  💬 Enviar WhatsApp
+                  ${isContacted ? '✓ Reenviar WA' : '💬 Enviar WhatsApp'}
                  </a>`
               : `<button class="btn btn-outline" disabled title="No tiene WhatsApp móvil (+569)">
                   Sin WhatsApp
@@ -323,7 +465,7 @@ class BrebornApp {
       this.sendModalWaBtn.style.display = 'inline-flex';
       this.sendModalWaBtn.href = `https://wa.me/${lead.whatsapp}?text=${encodeURIComponent(lead.pitch)}`;
       this.sendModalWaBtn.onclick = () => {
-        if (lead.status === 'Nuevo') {
+        if (lead.status === 'Nuevo' || !lead.status) {
           this.updateLeadStatus(lead.id, 'Mensaje Enviado');
         }
       };
@@ -354,7 +496,7 @@ class BrebornApp {
       `"${l.has_whatsapp ? 'SI' : 'NO'}"`,
       `"${l.website || ''}"`,
       `"${l.has_website ? 'SI' : 'NO'}"`,
-      `"${l.status}"`,
+      `"${l.status || 'Nuevo'}"`,
       `"${l.pitch.replace(/"/g, '""').replace(/\n/g, ' ')}"`
     ]);
 

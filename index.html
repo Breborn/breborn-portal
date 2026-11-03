@@ -64,6 +64,55 @@
       </div>
     </section>
 
+    <!-- Panel de Envío Automático (Piloto Automático) -->
+    <section class="autopilot-panel">
+      <div class="autopilot-header">
+        <div class="autopilot-title">
+          <span class="autopilot-badge">PILOTO AUTOMÁTICO</span>
+          <h3>⚡ Envíos Automáticos de WhatsApp</h3>
+          <p>Dispara mensajes secuenciales a tus prospectos y márcalos como contactados automáticamente.</p>
+        </div>
+        <div class="autopilot-controls">
+          <div class="control-item">
+            <label for="autoBatchSize">Lote:</label>
+            <select id="autoBatchSize" class="select-control">
+              <option value="5">Próximos 5 locales</option>
+              <option value="10" selected>Próximos 10 locales</option>
+              <option value="20">Próximos 20 locales</option>
+              <option value="ALL">Todos los pendientes con WhatsApp</option>
+            </select>
+          </div>
+          <div class="control-item">
+            <label for="autoDelay">Intervalo:</label>
+            <select id="autoDelay" class="select-control">
+              <option value="4">4 segundos (Rápido)</option>
+              <option value="8" selected>8 segundos (Recomendado)</option>
+              <option value="12">12 segundos (Seguro)</option>
+            </select>
+          </div>
+          <button id="startAutopilotBtn" class="btn btn-autopilot">
+            <span class="icon">🚀</span> Iniciar Envío Automático
+          </button>
+          <button id="stopAutopilotBtn" class="btn btn-danger" style="display: none;">
+            <span class="icon">⏹</span> Detener
+          </button>
+        </div>
+      </div>
+      <!-- Barra de Estado Activa -->
+      <div id="autopilotStatusBox" class="autopilot-status" style="display: none;">
+        <div class="status-info-row">
+          <span id="autopilotCurrentBiz" class="current-biz">Preparando envíos...</span>
+          <span id="autopilotProgressText" class="progress-ratio">0 / 0</span>
+        </div>
+        <div class="progress-bar-track">
+          <div id="autopilotProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <div class="countdown-row">
+          <span id="autopilotCountdown">Esperando inicio...</span>
+        </div>
+      </div>
+    </section>
+
     <!-- Barra de Filtros y Búsqueda -->
     <section class="filter-panel">
       <div class="search-box">
