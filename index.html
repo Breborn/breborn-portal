@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Breborn Leads Hub • Viña del Mar & Valparaíso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-dark">
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-section">
+        <div class="brand-badge">BREBORN SALES HUB</div>
+        <h1>Locales V Región <span>• Viña del Mar & Valparaíso</span></h1>
+        <p class="subtitle">Prospección directa a WhatsApp • Venta de Páginas Web & Acceso al Bucle de <a href="https://breborn.cl" target="_blank" rel="noopener">breborn.cl</a></p>
+      </div>
+      <div class="header-actions">
+        <button id="themeToggle" class="btn btn-secondary btn-icon" title="Cambiar tema">
+          <span class="icon">🌓</span> Modo
+        </button>
+        <button id="exportCsvBtn" class="btn btn-secondary">
+          <span class="icon">📥</span> Exportar CSV
+        </button>
+        <button id="resetStorageBtn" class="btn btn-outline" title="Reiniciar estados guardados">
+          <span class="icon">🔄</span> Reset Estados
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Métricas y KPIs -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon">🏢</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="kpiTotal">0</span>
+          <span class="kpi-label">Locales Totales</span>
+        </div>
+      </div>
+      <div class="kpi-card highlight-wa">
+        <div class="kpi-icon">💬</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="kpiWa">0</span>
+          <span class="kpi-label">Con WhatsApp Funcional (+569)</span>
+        </div>
+      </div>
+      <div class="kpi-card highlight-fire">
+        <div class="kpi-icon">🔥</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="kpiSinWeb">0</span>
+          <span class="kpi-label">Sin Web (Objetivo Principal)</span>
+        </div>
+      </div>
+      <div class="kpi-card highlight-success">
+        <div class="kpi-icon">🚀</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="kpiContactados">0</span>
+          <span class="kpi-label">Contactados / En Proceso</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <section class="filter-panel">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar por nombre, rubro, calle o comuna (ej: Peluquería, Reñaca, Café, Valparaíso)...">
+        <button id="clearSearch" class="btn-clear" style="display: none;">✕</button>
+      </div>
+
+      <div class="filters-row">
+        <!-- Rubro / Categoría -->
+        <div class="filter-group">
+          <label for="categoryFilter">Rubro / Categoría:</label>
+          <select id="categoryFilter" class="select-control">
+            <option value="ALL">Todas las categorías</option>
+            <option value="Peluquería y Belleza">💇 Peluquería y Belleza</option>
+            <option value="Cafetería">☕ Cafeterías</option>
+            <option value="Pastelería y Panadería">🥐 Pastelería y Panadería</option>
+            <option value="Local de Comida / Restaurante">🍔 Locales de Comida / Restaurantes</option>
+            <option value="Comercio, Ropa y Tiendas">🛍️ Comercio, Ropa y Tiendas</option>
+          </select>
+        </div>
+
+        <!-- Ciudad / Comuna -->
+        <div class="filter-group">
+          <label for="cityFilter">Comuna:</label>
+          <select id="cityFilter" class="select-control">
+            <option value="ALL">Todas las comunas</option>
+            <option value="Viña del Mar">Viña del Mar</option>
+            <option value="Valparaíso">Valparaíso</option>
+            <option value="Concón">Concón</option>
+            <option value="Quilpué">Quilpué</option>
+          </select>
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="filter-group">
+          <label for="waFilter">Filtro WhatsApp:</label>
+          <select id="waFilter" class="select-control">
+            <option value="ALL">Todos los locales</option>
+            <option value="WA_ONLY" selected>💬 Solo con WhatsApp (+569)</option>
+            <option value="NO_WA">Sin WhatsApp detectado</option>
+          </select>
+        </div>
+
+        <!-- Presencia Web -->
+        <div class="filter-group">
+          <label for="webFilter">Página Web:</label>
+          <select id="webFilter" class="select-control">
+            <option value="ALL">Todos</option>
+            <option value="NO_WEB">🔥 Sin Sitio Web (Cliente Ideal)</option>
+            <option value="HAS_WEB">🌐 Ya tienen Sitio Web</option>
+          </select>
+        </div>
+
+        <!-- Estado de Seguimiento -->
+        <div class="filter-group">
+          <label for="statusFilter">Estado:</label>
+          <select id="statusFilter" class="select-control">
+            <option value="ALL">Todos los estados</option>
+            <option value="Nuevo">⚪ Nuevo</option>
+            <option value="Mensaje Enviado">💬 Mensaje Enviado</option>
+            <option value="Interesado">⭐ Interesado</option>
+            <option value="En el Bucle">🎉 En el Bucle</option>
+            <option value="No Interesado">❌ No Interesado</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lista de Leads y Resultados -->
+    <section class="leads-container">
+      <div class="leads-header">
+        <h2 id="resultsCount">Mostrando locales...</h2>
+        <div class="view-toggles">
+          <span class="info-pill">💡 Haz clic en <strong>"Enviar WhatsApp"</strong> para abrir el chat con el pitch redactado</span>
+        </div>
+      </div>
+
+      <div id="leadsList" class="leads-grid">
+        <!-- Renderizado dinámico desde app.js -->
+      </div>
+
+      <div id="noResults" class="empty-state" style="display: none;">
+        <div class="empty-icon">🔎</div>
+        <h3>No se encontraron locales</h3>
+        <p>Prueba ajustando los filtros o el texto de búsqueda.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>Adaptado para <strong>Breborn</strong> (<a href="https://breborn.cl" target="_blank" rel="noopener">breborn.cl</a>) • Desarrollado con <strong>Harvey</strong> & <strong>Google Antigravity</strong></p>
+      <p class="footer-hint">Listo para alojar gratis en <strong>GitHub Pages</strong></p>
+    </div>
+  </footer>
+
+  <!-- Modal para ver/editar el Pitch personalizado -->
+  <div id="pitchModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalBizName">Mensaje de Prospección</h3>
+        <button id="closeModal" class="btn-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <label for="pitchTextarea">Mensaje listo para WhatsApp:</label>
+        <textarea id="pitchTextarea" rows="6" class="textarea-control"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button id="copyModalPitch" class="btn btn-secondary">📋 Copiar Texto</button>
+        <a id="sendModalWa" href="#" target="_blank" rel="noopener" class="btn btn-whatsapp">🚀 Abrir en WhatsApp</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
