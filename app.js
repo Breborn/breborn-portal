@@ -176,6 +176,43 @@ class BrebornApp {
         }, 2000);
       });
     });
+
+    // Quick Replies (Segunda Respuesta) tabs & copy buttons
+    const qrTabs = document.querySelectorAll('.qr-tab-btn');
+    const qrContents = document.querySelectorAll('.qr-content');
+    const copyQrBtns = document.querySelectorAll('.btn-copy-qr');
+
+    qrTabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-qrtab');
+        qrTabs.forEach(b => b.classList.remove('active'));
+        qrContents.forEach(c => c.classList.remove('active'));
+
+        btn.classList.add('active');
+        const activeContent = document.getElementById(`qrtab-${targetTab}`);
+        if (activeContent) {
+          activeContent.classList.add('active');
+        }
+      });
+    });
+
+    copyQrBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-copy-target');
+        const textElem = document.getElementById(targetId);
+        if (textElem) {
+          navigator.clipboard.writeText(textElem.innerText.trim()).then(() => {
+            const originalText = btn.textContent;
+            btn.textContent = '✓ ¡Copiado con éxito!';
+            btn.style.backgroundColor = '#10b981';
+            setTimeout(() => {
+              btn.textContent = originalText;
+              btn.style.backgroundColor = '';
+            }, 2000);
+          });
+        }
+      });
+    });
   }
 
   /* ================= PILOTO AUTOMÁTICO ================= */
