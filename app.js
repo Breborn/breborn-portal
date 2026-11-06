@@ -8,6 +8,14 @@ const EMBEDDED_LEADS = [{"id": "lead_001", "name": "The Black Barber", "category
 
 class BrebornApp {
   constructor() {
+    // Invalidador automático de caché local para asegurar estado 100% limpio
+    const DB_VERSION = 'v2_clean';
+    if (localStorage.getItem('breborn_db_version') !== DB_VERSION) {
+      localStorage.removeItem('breborn_leads_status');
+      localStorage.removeItem('breborn_leads_notes');
+      localStorage.setItem('breborn_db_version', DB_VERSION);
+    }
+
     this.leads = [];
     this.statuses = JSON.parse(localStorage.getItem('breborn_leads_status') || '{}');
     this.notes = JSON.parse(localStorage.getItem('breborn_leads_notes') || '{}');
