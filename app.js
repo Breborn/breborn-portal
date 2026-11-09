@@ -285,11 +285,16 @@ class BrebornApp {
     this.autopilotProgressText.textContent = `${currentNum} / ${total}`;
     this.autopilotCurrentBiz.innerHTML = `🚀 Enviando a: <strong>${lead.name}</strong> (${lead.whatsapp}) • ${lead.category} (${lead.city})`;
 
-    // 1. Open WhatsApp tab/window
+    // 1. Open WhatsApp Desktop App cleanly (via location or iframe, no blank tabs)
     try {
-      window.open(lead.wa_url, '_blank');
+      const desktopUri = `whatsapp://send?phone=${lead.whatsapp}&text=${encodeURIComponent(lead.pitch)}`;
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = desktopUri;
+      document.body.appendChild(iframe);
+      setTimeout(() => iframe.remove(), 3000);
     } catch (e) {
-      console.error('Error abriendo ventana:', e);
+      console.error('Error abriendo WhatsApp Desktop:', e);
     }
 
     // 2. Mark as Contacted / Mensaje Enviado immediately
@@ -481,10 +486,10 @@ class BrebornApp {
           </button>
           ${
             lead.has_whatsapp
-              ? `<a href="whatsapp://send?phone=${lead.whatsapp}&text=${encodeURIComponent(lead.pitch)}" class="btn btn-whatsapp" title="Abrir directamente en WhatsApp App de Escritorio / Teléfono">
-                  ${isContacted ? '✓ Reenviar App' : '📱 App / Teléfono'}
+              ? `<a href="whatsapp://send?phone=${lead.whatsapp}&text=${encodeURIComponent(lead.pitch)}" class="btn btn-whatsapp" title="Abrir directamente en la App WhatsApp de Escritorio">
+                  ${isContacted ? '✓ Reenviar App' : '📱 WhatsApp App'}
                  </a>
-                 <a href="https://web.whatsapp.com/send?phone=${lead.whatsapp}&text=${encodeURIComponent(lead.pitch)}" target="_blank" rel="noopener" class="btn btn-secondary btn-whatsapp-web" title="Abrir en WhatsApp Web">
+                 <a href="https://web.whatsapp.com/send?phone=${lead.whatsapp}&text=${encodeURIComponent(lead.pitch)}" target="_blank" rel="noopener" class="btn btn-secondary btn-whatsapp-web" title="Abrir en WhatsApp Web en una pestaña">
                   🌐 WA Web
                  </a>`
               : `<button class="btn btn-outline" disabled title="No tiene WhatsApp móvil (+569)">
@@ -511,7 +516,7 @@ class BrebornApp {
 
     if (lead.has_whatsapp) {
       this.sendModalWaBtn.style.display = 'inline-flex';
-      this.sendModalWaBtn.href = `https://wa.me/${lead.whatsapp}?text=${encodeURIComponent(lead.pitch)}`;
+      this.sendModalWaBtn.href = `whatsapp://send?phone=${lead.whatsapp}&text=${encodeURIComponent(lead.pitch)}`;
       this.sendModalWaBtn.onclick = () => {
         if (lead.status === 'Nuevo' || !lead.status) {
           this.updateLeadStatus(lead.id, 'Mensaje Enviado');
