@@ -406,15 +406,15 @@ class BrebornApp {
         viewPitchBtn.addEventListener('click', () => this.openPitchModal(lead));
       }
 
-      // WhatsApp direct click
-      const waBtn = cardEl.querySelector('.btn-whatsapp');
-      if (waBtn) {
+      // WhatsApp direct click (App / Phone or Web)
+      const waBtns = cardEl.querySelectorAll('.btn-whatsapp, .btn-whatsapp-web');
+      waBtns.forEach(waBtn => {
         waBtn.addEventListener('click', () => {
           if (lead.status === 'Nuevo' || !lead.status) {
             this.updateLeadStatus(lead.id, 'Mensaje Enviado');
           }
         });
-      }
+      });
     });
   }
 
@@ -481,8 +481,11 @@ class BrebornApp {
           </button>
           ${
             lead.has_whatsapp
-              ? `<a href="${lead.wa_url}" target="_blank" rel="noopener" class="btn btn-whatsapp" title="Abrir chat en WhatsApp con pitch listo">
-                  ${isContacted ? '✓ Reenviar WA' : '💬 Enviar WhatsApp'}
+              ? `<a href="whatsapp://send?phone=${lead.whatsapp}&text=${encodeURIComponent(lead.pitch)}" class="btn btn-whatsapp" title="Abrir directamente en WhatsApp App de Escritorio / Teléfono">
+                  ${isContacted ? '✓ Reenviar App' : '📱 App / Teléfono'}
+                 </a>
+                 <a href="https://web.whatsapp.com/send?phone=${lead.whatsapp}&text=${encodeURIComponent(lead.pitch)}" target="_blank" rel="noopener" class="btn btn-secondary btn-whatsapp-web" title="Abrir en WhatsApp Web">
+                  🌐 WA Web
                  </a>`
               : `<button class="btn btn-outline" disabled title="No tiene WhatsApp móvil (+569)">
                   Sin WhatsApp
