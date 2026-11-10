@@ -1,16 +1,24 @@
 param(
-    [int]$BatchSize = 5,
-    [int]$DelaySec = 20
+    [int]$BatchSize = 10,
+    [int]$DelaySec = 25,
+    [switch]$All,
+    [switch]$OnlySinWeb
 )
 
-Add-Type -ReferencedAssemblies "System.Drawing.dll", "System.Windows.Forms.dll" @"
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+
+$uiaClient = [System.Windows.Automation.AutomationElement].Assembly.Location
+$uiaTypes = [System.Windows.Automation.ControlType].Assembly.Location
+
+Add-Type -ReferencedAssemblies $uiaClient, $uiaTypes @"
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Windows.Forms;
 using System.Text;
+using System.Threading;
+using System.Windows.Automation;
 
 public class WaAutomator {
     [DllImport("user32.dll")]
@@ -43,35 +51,158 @@ public class WaAutomator {
     public const byte VK_RETURN = 0x0D;
     public const uint KEYEVENTF_KEYUP = 0x0002;
 
-    public static bool SendEnterToWhatsApp() {
-        bool success = false;
+    private static List<IntPtr> GetWhatsAppWindows(IntPtr hInput) {
+        var list = new List<IntPtr>();
+        EnumDesktopWindows(hInput, (hWnd, lParam) => {
+            if (IsWindowVisible(hWnd)) {
+                StringBuilder sb = new StringBuilder(256);
+                GetWindowText(hWnd, sb, 256);
+                if (sb.ToString() == "WhatsApp") {
+                    list.Add(hWnd);
+                }
+            }
+            return true;
+        }, IntPtr.Zero);
+        return list;
+    }
+
+    private static string DigitsOnly(string s) {
+        if (s == null) return "";
+        var sb = new StringBuilder();
+        foreach (char c in s) if (char.IsDigit(c)) sb.Append(c);
+        return sb.ToString();
+    }
+
+    private static void ScanWindowState(IntPtr hInput, out string activeCompose, out AutomationElement composeEl, out IntPtr composeHwnd, out string errorMsg, out AutomationElement okBtn) {
+        activeCompose = "";
+        composeEl = null;
+        composeHwnd = IntPtr.Zero;
+        errorMsg = "";
+        okBtn = null;
+        var hwnds = GetWhatsAppWindows(hInput);
+        foreach (IntPtr hwnd in hwnds) {
+            try {
+                var root = AutomationElement.FromHandle(hwnd);
+                var all = root.FindAll(TreeScope.Descendants, Condition.TrueCondition);
+                if (all.Count < 20) continue;
+                foreach (AutomationElement el in all) {
+                    try {
+                        string name = el.Current.Name ?? "";
+                        string ct = el.Current.ControlType.ProgrammaticName ?? "";
+                        if ((ct == "ControlType.Text" || ct == "ControlType.Group" || ct == "ControlType.Window") &&
+                            (name.Contains("no est\u00e1 en WhatsApp") || name.Contains("isn't on WhatsApp") || name.Contains("no es v\u00e1lido") || name.Contains("phone number shared via url is invalid"))) {
+                            errorMsg = name;
+                        }
+                        if (ct == "ControlType.Button" && (name == "OK" || name == "Aceptar" || name == "Cerrar")) {
+                            okBtn = el;
+                        }
+                        if (ct == "ControlType.Edit" && (name.StartsWith("Escribir un mensaje") || name.StartsWith("Type a message"))) {
+                            activeCompose = name;
+                            composeEl = el;
+                            composeHwnd = hwnd;
+                        }
+                    } catch {}
+                }
+            } catch {}
+        }
+    }
+
+    public static string SendMessageSafe(string phone, string uri) {
+        string outcome = "FAILED";
+        string prevCompose = "";
+
+        Thread thPrev = new Thread(() => {
+            IntPtr hInput = OpenInputDesktop(0, false, 0x01FF);
+            if (hInput != IntPtr.Zero && SetThreadDesktop(hInput)) {
+                string e;
+                AutomationElement cel, ok;
+                IntPtr chw;
+                ScanWindowState(hInput, out prevCompose, out cel, out chw, out e, out ok);
+                if (!string.IsNullOrEmpty(e) && ok != null) {
+                    try {
+                        object pat;
+                        if (ok.TryGetCurrentPattern(InvokePattern.Pattern, out pat)) {
+                            ((InvokePattern)pat).Invoke();
+                            Thread.Sleep(350);
+                        }
+                    } catch {}
+                }
+            }
+            if (hInput != IntPtr.Zero) CloseDesktop(hInput);
+        });
+        thPrev.SetApartmentState(ApartmentState.STA);
+        thPrev.Start();
+        thPrev.Join();
+
+        Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
+
         Thread t = new Thread(() => {
             IntPtr hInput = OpenInputDesktop(0, false, 0x01FF);
             if (hInput != IntPtr.Zero && SetThreadDesktop(hInput)) {
-                IntPtr waHwnd = IntPtr.Zero;
-                EnumDesktopWindows(hInput, (hWnd, lParam) => {
-                    if (IsWindowVisible(hWnd)) {
-                        StringBuilder sb = new StringBuilder(256);
-                        GetWindowText(hWnd, sb, 256);
-                        if (sb.ToString() == "WhatsApp") {
-                            waHwnd = hWnd;
-                            return false;
+                Thread.Sleep(1800);
+                var sw = Stopwatch.StartNew();
+                string phoneTail = phone.Length >= 8 ? phone.Substring(phone.Length - 8) : phone;
+
+                while (sw.ElapsedMilliseconds < 6000) {
+                    string activeCompose, errorMsg;
+                    AutomationElement composeEl, okBtn;
+                    IntPtr composeHwnd;
+                    ScanWindowState(hInput, out activeCompose, out composeEl, out composeHwnd, out errorMsg, out okBtn);
+
+                    if (!string.IsNullOrEmpty(errorMsg)) {
+                        if (okBtn != null) {
+                            try {
+                                object pat;
+                                if (okBtn.TryGetCurrentPattern(InvokePattern.Pattern, out pat)) {
+                                    ((InvokePattern)pat).Invoke();
+                                    Thread.Sleep(350);
+                                }
+                            } catch {}
+                        }
+                        outcome = "NO_WHATSAPP";
+                        break;
+                    }
+
+                    if (!string.IsNullOrEmpty(activeCompose) && composeEl != null) {
+                        string composeDigits = DigitsOnly(activeCompose);
+                        bool matchesPhone = composeDigits.EndsWith(phoneTail);
+                        bool changedToSavedName = (composeDigits.Length == 0 && activeCompose != prevCompose);
+
+                        if (matchesPhone || changedToSavedName || sw.ElapsedMilliseconds >= 4200) {
+                            Thread.Sleep(800);
+                            string c2, e2;
+                            AutomationElement cel2, ok2;
+                            IntPtr chw2;
+                            ScanWindowState(hInput, out c2, out cel2, out chw2, out e2, out ok2);
+                            if (!string.IsNullOrEmpty(e2)) {
+                                if (ok2 != null) {
+                                    try {
+                                        object pat;
+                                        if (ok2.TryGetCurrentPattern(InvokePattern.Pattern, out pat)) ((InvokePattern)pat).Invoke();
+                                    } catch {}
+                                }
+                                outcome = "NO_WHATSAPP";
+                                break;
+                            }
+
+                            var hwnds = GetWhatsAppWindows(hInput);
+                            foreach (IntPtr hw in hwnds) {
+                                ShowWindow(hw, 9); // SW_RESTORE
+                                SetForegroundWindow(hw);
+                            }
+                            if (chw2 != IntPtr.Zero) SetForegroundWindow(chw2);
+                            Thread.Sleep(350);
+                            try { if (cel2 != null) cel2.SetFocus(); } catch {}
+                            Thread.Sleep(350);
+
+                            keybd_event(VK_RETURN, 0, 0, UIntPtr.Zero);
+                            Thread.Sleep(90);
+                            keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                            outcome = "SENT";
+                            break;
                         }
                     }
-                    return true;
-                }, IntPtr.Zero);
-
-                if (waHwnd != IntPtr.Zero) {
-                    ShowWindow(waHwnd, 9); // SW_RESTORE
-                    ShowWindow(waHwnd, 3); // SW_MAXIMIZE
-                    SetForegroundWindow(waHwnd);
-                    Thread.Sleep(700);
-
-                    // Send Enter
-                    keybd_event(VK_RETURN, 0, 0, UIntPtr.Zero);
-                    Thread.Sleep(90);
-                    keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-                    success = true;
+                    Thread.Sleep(250);
                 }
             }
             if (hInput != IntPtr.Zero) CloseDesktop(hInput);
@@ -79,70 +210,80 @@ public class WaAutomator {
         t.SetApartmentState(ApartmentState.STA);
         t.Start();
         t.Join();
-        return success;
+        return outcome;
     }
 }
 "@
 
 $portalDir = "C:\Users\edote\.gemini\antigravity\scratch\breborn-portal"
 $jsonFile = Join-Path $portalDir "breborn_leads.json"
+$updateJs = Join-Path $portalDir "update_status.js"
 
 # Read leads safely
 $rawJson = [System.IO.File]::ReadAllText($jsonFile, [System.Text.Encoding]::UTF8)
 $leads = $rawJson | ConvertFrom-Json
 
-# Find pending gastronomy leads
+# Select EVERYTHING on the page with WhatsApp that has NOT had a message sent yet
 $pending = @($leads | Where-Object {
     $_.has_whatsapp -and
-    (-not $_.has_website) -and
-    ($_.category -match 'Caf|Restauran|Past|Comida') -and
-    ([string]::IsNullOrEmpty($_.status) -or $_.status -eq 'Nuevo')
+    (-not [string]::IsNullOrEmpty($_.whatsapp)) -and
+    ((-not $OnlySinWeb) -or (-not $_.has_website)) -and
+    ($_.status -ne 'Mensaje Enviado' -and $_.status -ne 'Interesado' -and $_.status -ne 'En el Bucle' -and $_.status -ne 'No Interesado' -and $_.status -ne 'Sin WhatsApp')
 })
 
-Write-Output "Total de locales gastronómicos pendientes sin web: $($pending.Count)"
+$sinWebPending = @($pending | Where-Object { -not $_.has_website }).Count
+Write-Output "Total de locales en el portal SIN 'Mensaje Enviado' y con WhatsApp: $($pending.Count) (de ellos, $sinWebPending sin web propia)"
 
-$count = [Math]::Min($BatchSize, $pending.Count)
+if ($All -or $BatchSize -le 0) {
+    $count = $pending.Count
+} else {
+    $count = [Math]::Min($BatchSize, $pending.Count)
+}
+
 if ($count -le 0) {
-    Write-Output "No quedan locales pendientes en estado 'Nuevo'."
+    Write-Output "No quedan locales pendientes sin mensaje enviado."
     exit 0
 }
 
-Write-Output "Iniciando tanda de $count envíos automáticos..."
-Write-Output "Por favor NO toques el teclado ni el ratón durante el proceso."
+Write-Output "Iniciando tanda de $count envios automaticos (todas las categorias del portal)..."
+Write-Output "Por favor NO toques el teclado ni el raton durante el proceso."
 Write-Output ""
+
+$sentCount = 0
+$noWaCount = 0
 
 for ($i = 0; $i -lt $count; $i++) {
     $lead = $pending[$i]
+    $webTag = if ($lead.has_website) { "Con Web / Bucle" } else { "Sin Web" }
     Write-Output "============================================================"
-    Write-Output "[$($i + 1)/$count] Procesando: $($lead.name) ($($lead.city)) -> +$($lead.whatsapp)"
+    Write-Output "[$($i + 1)/$count] $($lead.name) [$($lead.category) | $webTag | $($lead.city)] -> +$($lead.whatsapp)"
 
     $encoded = [System.Uri]::EscapeDataString($lead.pitch)
     $uri = "whatsapp://send?phone=$($lead.whatsapp)&text=$encoded"
 
-    Start-Process $uri
-    Write-Output "   -> Abriendo chat y precargando texto (4.5s)..."
-    Start-Sleep -Milliseconds 4500
+    Write-Output "   -> Abriendo WhatsApp Desktop, validando numero y preparando envio..."
+    $res = [WaAutomator]::SendMessageSafe($lead.whatsapp, $uri)
 
-    $sent = [WaAutomator]::SendEnterToWhatsApp()
-    Write-Output "   -> Tecla ENTER enviada: $sent (Mensaje despachado)"
-
-    # Update in memory
-    $lead.status = "Mensaje Enviado"
-
-    # Save to disk
-    $leadsJson = $leads | ConvertTo-Json -Depth 10
-    [System.IO.File]::WriteAllText($jsonFile, $leadsJson, [System.Text.UTF8Encoding]::new($false))
-
-    $dataJson = Join-Path $portalDir "data\breborn_leads.json"
-    if (Test-Path $dataJson) {
-        [System.IO.File]::WriteAllText($dataJson, $leadsJson, [System.Text.UTF8Encoding]::new($false))
+    if ($res -eq "SENT") {
+        $sentCount++
+        node $updateJs $lead.id "Mensaje Enviado"
+        Write-Output "   -> ENVIADO! Estado actualizado a 'Mensaje Enviado'."
+    } elseif ($res -eq "NO_WHATSAPP") {
+        $noWaCount++
+        node $updateJs $lead.id "Sin WhatsApp"
+        Write-Output "   -> AVISO: Numero no disponible en WhatsApp. Descartado sin enviar."
+    } else {
+        Write-Output "   -> AVISO: No se pudo confirmar el envio ($res). Queda en 'Nuevo' para reintentar."
     }
 
-    Write-Output "   -> Estado actualizado a 'Mensaje Enviado'."
-
     if ($i -lt ($count - 1)) {
-        Write-Output "   -> Pausa de seguridad de $DelaySec segundos para proteger tu cuenta de WhatsApp..."
-        Start-Sleep -Seconds $DelaySec
+        if ((($i + 1) % 15) -eq 0) {
+            Write-Output "   -> Pausa extendida de proteccion anti-spam (45 segundos tras 15 envios)..."
+            Start-Sleep -Seconds 45
+        } else {
+            Write-Output "   -> Pausa de seguridad de $DelaySec segundos..."
+            Start-Sleep -Seconds $DelaySec
+        }
     }
 }
 
@@ -155,5 +296,5 @@ if (Test-Path $syncScript) {
 }
 
 Write-Output "============================================================"
-Write-Output "¡Tanda de $count mensajes finalizada con éxito!"
-Write-Output "Ya puedes revisar los chats en tu WhatsApp de escritorio o teléfono."
+Write-Output "Tanda finalizada! Enviados: $sentCount | Sin WhatsApp detectados: $noWaCount"
+Write-Output "Ya puedes revisar los chats y la pagina actualizada."
