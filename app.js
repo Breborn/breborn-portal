@@ -9,7 +9,7 @@ const EMBEDDED_LEADS = [{"id":"lead_254","name":"Experiencia Boutique & Cafe","c
 class BrebornApp {
   constructor() {
     // Invalidador automático de caché local para asegurar estado 100% limpio
-    const DB_VERSION = 'v14_curated_breborn_profile_20261110';
+    const DB_VERSION = 'v15_contact_tabs_20261110';
     if (localStorage.getItem('breborn_db_version') !== DB_VERSION) {
       localStorage.removeItem('breborn_leads_status');
       localStorage.removeItem('breborn_leads_notes');
@@ -20,6 +20,7 @@ class BrebornApp {
     this.statuses = JSON.parse(localStorage.getItem('breborn_leads_status') || '{}');
     this.notes = JSON.parse(localStorage.getItem('breborn_leads_notes') || '{}');
     this.activePitchLead = null;
+    this.activeContactTab = 'pending';
 
     // Autopilot state
     this.isAutopilotRunning = false;
@@ -51,6 +52,10 @@ class BrebornApp {
     this.leadsList = document.getElementById('leadsList');
     this.noResults = document.getElementById('noResults');
     this.resultsCount = document.getElementById('resultsCount');
+    this.tabPending = document.getElementById('tabPending');
+    this.tabContacted = document.getElementById('tabContacted');
+    this.tabPendingCount = document.getElementById('tabPendingCount');
+    this.tabContactedCount = document.getElementById('tabContactedCount');
 
     this.themeToggle = document.getElementById('themeToggle');
     this.exportCsvBtn = document.getElementById('exportCsvBtn');
@@ -135,7 +140,13 @@ class BrebornApp {
     this.cityFilter.addEventListener('change', () => this.render());
     this.waFilter.addEventListener('change', () => this.render());
     this.webFilter.addEventListener('change', () => this.render());
-    this.statusFilter.addEventListener('change', () => this.render());
+    this.statusFilter.addEventListener('change', () => this.handleStatusFilterChange());
+    if (this.tabPending) {
+      this.tabPending.addEventListener('click', () => this.setContactTab('pending'));
+    }
+    if (this.tabContacted) {
+      this.tabContacted.addEventListener('click', () => this.setContactTab('contacted'));
+    }
 
     // Autopilot buttons
     if (this.startAutopilotBtn) {
@@ -338,7 +349,40 @@ class BrebornApp {
 
   /* ================= FILTROS Y RENDER ================= */
 
-  getFilteredLeads() {
+  isContactedStatus(status) {
+    return (
+      status === 'Mensaje Enviado' ||
+      status === 'Interesado' ||
+      status === 'En el Bucle' ||
+      status === 'No Interesado'
+    );
+  }
+
+  setContactTab(tab) {
+    this.activeContactTab = tab === 'contacted' ? 'contacted' : 'pending';
+    const currentStatus = this.statusFilter.value;
+    if (this.activeContactTab === 'pending' && this.isContactedStatus(currentStatus)) {
+      this.statusFilter.value = 'ALL';
+    } else if (
+      this.activeContactTab === 'contacted' &&
+      (currentStatus === 'Nuevo' || currentStatus === 'Sin WhatsApp')
+    ) {
+      this.statusFilter.value = 'ALL';
+    }
+    this.render();
+  }
+
+  handleStatusFilterChange() {
+    const val = this.statusFilter.value;
+    if (this.isContactedStatus(val)) {
+      this.activeContactTab = 'contacted';
+    } else if (val === 'Nuevo' || val === 'Sin WhatsApp') {
+      this.activeContactTab = 'pending';
+    }
+    this.render();
+  }
+
+  getBaseFilteredLeads(applyStatus = true) {
     const query = this.searchInput.value.toLowerCase().trim();
     const cat = this.categoryFilter.value;
     const city = this.cityFilter.value;
@@ -361,17 +405,30 @@ class BrebornApp {
       if (web === 'NO_WEB' && lead.has_website) return false;
       if (web === 'HAS_WEB' && !lead.has_website) return false;
 
-      if (status !== 'ALL' && lead.status !== status) return false;
+      if (applyStatus && status !== 'ALL' && lead.status !== status) return false;
 
       return true;
     });
+  }
+
+  getFilteredLeads() {
+    const list = this.getBaseFilteredLeads(true).filter(lead => {
+      const contacted = this.isContactedStatus(lead.status);
+      return this.activeContactTab === 'contacted' ? contacted : !contacted;
+    });
+
+    if (this.activeContactTab === 'contacted') {
+      const rank = { 'En el Bucle': 0, 'Interesado': 1, 'Mensaje Enviado': 2, 'No Interesado': 3 };
+      list.sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
+    }
+    return list;
   }
 
   updateKPIs() {
     const total = this.leads.length;
     const waCount = this.leads.filter(l => l.has_whatsapp).length;
     const sinWebCount = this.leads.filter(l => !l.has_website).length;
-    const contactados = this.leads.filter(l => l.status === 'Mensaje Enviado' || l.status === 'Interesado' || l.status === 'En el Bucle').length;
+    const contactados = this.leads.filter(l => this.isContactedStatus(l.status)).length;
 
     this.kpiTotal.textContent = total;
     this.kpiWa.textContent = waCount;
@@ -379,11 +436,30 @@ class BrebornApp {
     this.kpiContactados.textContent = contactados;
   }
 
+  updateTabIndicators(baseWithoutStatus) {
+    const pendingCount = baseWithoutStatus.filter(l => !this.isContactedStatus(l.status)).length;
+    const contactedCount = baseWithoutStatus.filter(l => this.isContactedStatus(l.status)).length;
+
+    if (this.tabPendingCount) this.tabPendingCount.textContent = pendingCount;
+    if (this.tabContactedCount) this.tabContactedCount.textContent = contactedCount;
+
+    if (this.tabPending && this.tabContacted) {
+      const isPending = this.activeContactTab === 'pending';
+      this.tabPending.classList.toggle('active', isPending);
+      this.tabPending.setAttribute('aria-selected', String(isPending));
+      this.tabContacted.classList.toggle('active', !isPending);
+      this.tabContacted.setAttribute('aria-selected', String(!isPending));
+    }
+  }
+
   render() {
     this.updateKPIs();
-    const filtered = this.getFilteredLeads();
+    const baseWithoutStatus = this.getBaseFilteredLeads(false);
+    this.updateTabIndicators(baseWithoutStatus);
 
-    this.resultsCount.textContent = `Mostrando ${filtered.length} locales (${filtered.filter(l => l.has_whatsapp).length} con WhatsApp directo)`;
+    const filtered = this.getFilteredLeads();
+    const tabLabel = this.activeContactTab === 'contacted' ? 'ya contactados' : 'por contactar';
+    this.resultsCount.textContent = `Mostrando ${filtered.length} locales ${tabLabel} (${filtered.filter(l => l.has_whatsapp).length} con WhatsApp directo)`;
 
     if (filtered.length === 0) {
       this.leadsList.innerHTML = '';
@@ -425,8 +501,14 @@ class BrebornApp {
 
   createLeadCardHTML(lead) {
     const isGold = lead.has_whatsapp && !lead.has_website;
-    const isContacted = lead.status === 'Mensaje Enviado';
+    const isContacted = this.isContactedStatus(lead.status);
     const statusClass = `status-${(lead.status || 'nuevo').toLowerCase().replace(/\s+/g, '-')}`;
+    const contactedBadgeHtml = {
+      'En el Bucle': '<span class="badge badge-loop">🎉 En el Bucle</span>',
+      'Interesado': '<span class="badge badge-interested">⭐ Interesado</span>',
+      'Mensaje Enviado': '<span class="badge badge-contacted">✓ Contactado</span>',
+      'No Interesado': '<span class="badge badge-declined">✕ No Interesado</span>'
+    }[lead.status] || '';
 
     const catEmoji = {
       'Peluquería y Belleza': '💇',
@@ -446,11 +528,7 @@ class BrebornApp {
             <div class="lead-badges">
               <span class="badge badge-category">${catEmoji} ${lead.category}</span>
               <span class="badge badge-city">📍 ${lead.city}</span>
-              ${
-                isContacted
-                  ? '<span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);">✓ Contactado</span>'
-                  : ''
-              }
+              ${contactedBadgeHtml}
               ${
                 !lead.has_website
                   ? '<span class="badge badge-noweb">🔥 Sin Web</span>'

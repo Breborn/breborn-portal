@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=4.1">
 </head>
 <body class="theme-dark">
   <header class="app-header">
@@ -324,6 +324,16 @@ El "Bucle Comercial" consiste en que todos los negocios de nuestra red se recomi
 
     <!-- Lista de Leads y Resultados -->
     <section class="leads-container">
+      <!-- Pestañas: Por Contactar vs Ya Contactados -->
+      <div class="pipeline-tabs" role="tablist" aria-label="Separación por estado de contacto">
+        <button id="tabPending" class="pipeline-tab active" data-tab="pending" role="tab" aria-selected="true">
+          📩 Por Contactar <span id="tabPendingCount" class="tab-count">0</span>
+        </button>
+        <button id="tabContacted" class="pipeline-tab" data-tab="contacted" role="tab" aria-selected="false">
+          ✅ Ya Contactados <span id="tabContactedCount" class="tab-count">0</span>
+        </button>
+      </div>
+
       <div class="leads-header">
         <h2 id="resultsCount">Mostrando locales...</h2>
         <div class="view-toggles">
@@ -368,6 +378,6 @@ El "Bucle Comercial" consiste en que todos los negocios de nuestra red se recomi
     </div>
   </div>
 
-  <script src="app.js?v=4.8"></script>
+  <script src="app.js?v=4.9"></script>
 </body>
 </html>
