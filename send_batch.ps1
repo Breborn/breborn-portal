@@ -144,7 +144,7 @@ public class WaAutomator {
                 var sw = Stopwatch.StartNew();
                 string phoneTail = phone.Length >= 8 ? phone.Substring(phone.Length - 8) : phone;
 
-                while (sw.ElapsedMilliseconds < 6000) {
+                while (sw.ElapsedMilliseconds < 8000) {
                     string activeCompose, errorMsg;
                     AutomationElement composeEl, okBtn;
                     IntPtr composeHwnd;
@@ -168,8 +168,9 @@ public class WaAutomator {
                         string composeDigits = DigitsOnly(activeCompose);
                         bool matchesPhone = composeDigits.EndsWith(phoneTail);
                         bool changedToSavedName = (composeDigits.Length == 0 && activeCompose != prevCompose);
+                        bool timedOutWithSwitch = (sw.ElapsedMilliseconds >= 4500 && (string.IsNullOrEmpty(prevCompose) || activeCompose != prevCompose));
 
-                        if (matchesPhone || changedToSavedName || sw.ElapsedMilliseconds >= 4200) {
+                        if (matchesPhone || changedToSavedName || timedOutWithSwitch) {
                             Thread.Sleep(800);
                             string c2, e2;
                             AutomationElement cel2, ok2;
