@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Automation;
 
@@ -60,7 +61,8 @@ public class WaAutomator {
             if (IsWindowVisible(hWnd)) {
                 StringBuilder sb = new StringBuilder(256);
                 GetWindowText(hWnd, sb, 256);
-                if (sb.ToString() == "WhatsApp") {
+                string title = sb.ToString();
+                if (title == "WhatsApp" || Regex.IsMatch(title, @"^\(\d+\)\s+WhatsApp$")) {
                     list.Add(hWnd);
                 }
             }
