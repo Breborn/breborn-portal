@@ -230,12 +230,13 @@ $rawJson = [System.IO.File]::ReadAllText($jsonFile, [System.Text.Encoding]::UTF8
 $leads = $rawJson | ConvertFrom-Json
 
 $idFilterSet = if ([string]::IsNullOrWhiteSpace($LeadIds)) { @() } else { $LeadIds -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } }
+$cityFilterSet = if ([string]::IsNullOrWhiteSpace($City)) { @() } else { $City -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } }
 # Select EVERYTHING on the page with WhatsApp that has NOT had a message sent yet
 $pending = @($leads | Where-Object {
     $_.has_whatsapp -and
     (-not [string]::IsNullOrEmpty($_.whatsapp)) -and
     ((-not $OnlySinWeb) -or (-not $_.has_website)) -and
-    ([string]::IsNullOrEmpty($City) -or $_.city -eq $City) -and
+    (($cityFilterSet.Count -eq 0) -or ($cityFilterSet -contains $_.city)) -and
     (($idFilterSet.Count -eq 0) -or ($idFilterSet -contains $_.id)) -and
     ($_.status -ne 'Mensaje Enviado' -and $_.status -ne 'Interesado' -and $_.status -ne 'En el Bucle' -and $_.status -ne 'No Interesado' -and $_.status -ne 'Sin WhatsApp')
 })
