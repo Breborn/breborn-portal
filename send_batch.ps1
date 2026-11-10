@@ -2,7 +2,8 @@ param(
     [int]$BatchSize = 10,
     [int]$DelaySec = 25,
     [switch]$All,
-    [switch]$OnlySinWeb
+    [switch]$OnlySinWeb,
+    [switch]$DryRun
 )
 
 Add-Type -AssemblyName UIAutomationClient
@@ -233,6 +234,16 @@ $pending = @($leads | Where-Object {
 
 $sinWebPending = @($pending | Where-Object { -not $_.has_website }).Count
 Write-Output "Total de locales en el portal SIN 'Mensaje Enviado' y con WhatsApp: $($pending.Count) (de ellos, $sinWebPending sin web propia)"
+
+if ($DryRun) {
+    Write-Output "[DRY RUN] Primeros 10 en la cola universal:"
+    $pending | Select-Object -First 10 | ForEach-Object -Begin { $idx = 0 } -Process {
+        $idx++
+        $wt = if ($_.has_website) { "Con Web" } else { "Sin Web" }
+        Write-Output "  $idx. $($_.name) [$($_.category) | $wt | $($_.city)] -> +$($_.whatsapp)"
+    }
+    exit 0
+}
 
 if ($All -or $BatchSize -le 0) {
     $count = $pending.Count
