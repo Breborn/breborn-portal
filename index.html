@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.1">
+  <link rel="stylesheet" href="style.css?v=4.2">
 </head>
 <body class="theme-dark">
   <header class="app-header">
@@ -125,19 +125,33 @@
       </div>
       
       <div class="qr-tabs-nav">
-        <button class="qr-tab-btn active" data-qrtab="barberia">💈 Barbería / Salón</button>
-        <button class="qr-tab-btn" data-qrtab="cafeteria">☕ Cafetería / Brunch</button>
+        <button class="qr-tab-btn active" data-qrtab="primerbucle">🌱 Primer Bucle (Gratis)</button>
+        <button class="qr-tab-btn" data-qrtab="bucle">🔄 Planes Breborn.cl</button>
         <button class="qr-tab-btn" data-qrtab="sushi">🍣 Sushi / Comida</button>
+        <button class="qr-tab-btn" data-qrtab="cafeteria">☕ Cafetería / Brunch</button>
         <button class="qr-tab-btn" data-qrtab="canina">🐶 Peluquería Canina</button>
         <button class="qr-tab-btn" data-qrtab="floreria">💐 Florería / Vivero</button>
         <button class="qr-tab-btn" data-qrtab="cartaexpress">⚡ Carta Express</button>
-        <button class="qr-tab-btn" data-qrtab="precio">💰 Preguntan Precio</button>
+        <button class="qr-tab-btn" data-qrtab="barberia">💈 Demo Barbería</button>
+        <button class="qr-tab-btn" data-qrtab="precio">💰 Precio Web</button>
         <button class="qr-tab-btn" data-qrtab="cierre">💳 Cierre / Suscripción MP</button>
-        <button class="qr-tab-btn" data-qrtab="bucle">🔄 Explican Breborn</button>
       </div>
 
       <div class="qr-box">
-        <div class="qr-content active" id="qrtab-barberia">
+        <div class="qr-content active" id="qrtab-primerbucle">
+          <div class="qr-text-preview" id="qrText-primerbucle">¡Qué bacán! Entrar al plan Primer Bucle en breborn.cl es 100% gratis (no se pide tarjeta ni cobros ocultos).
+
+Incluye tu perfil con logo, descripción, hasta 3 productos con foto y botón directo a tu WhatsApp/Instagram para que te encuentren en el mapa local de la V Región.
+
+Puedes registrarte directo acá 👉 https://breborn.cl (o me pasas tu logo + 3 fotos y te lo dejo arriba hoy mismo). ¿Cómo prefieres?</div>
+          <div class="qr-actions">
+            <button class="btn btn-primary btn-copy-qr" data-copy-target="qrText-primerbucle">📋 Copiar Respuesta Bucle Gratis</button>
+            <a href="https://breborn.cl" target="_blank" rel="noopener" class="btn btn-secondary">🌐 Abrir breborn.cl</a>
+            <span class="qr-meta">🌱 Entrada sin costo ($0) • Ideal para llenar el Bucle General</span>
+          </div>
+        </div>
+
+        <div class="qr-content" id="qrtab-barberia">
           <div class="qr-text-preview" id="qrText-barberia">¡Excelente! Les comparto una muestra interactiva para que vean la calidad y estilo visual que manejamos (con agendador de horas directo a su WhatsApp):
 👉 https://breborn.github.io/barberia-demo/
 
@@ -238,11 +252,16 @@ Recuerda que tanto tu página web como tu vitrina destacada en breborn.cl se man
         </div>
 
         <div class="qr-content" id="qrtab-bucle">
-          <div class="qr-text-preview" id="qrText-bucle">¡Hola! Breborn (breborn.cl) es una plataforma y comunidad de la Región de Valparaíso creada para potenciar a negocios locales.
+          <div class="qr-text-preview" id="qrText-bucle">¡Hola! Breborn (breborn.cl) es una vitrina y mapa colaborativo de emprendimientos locales en Chile:
 
-El "Bucle Comercial" consiste en que todos los negocios de nuestra red se recomiendan mutuamente, generando tráfico cruzado de clientes de la zona entre peluquerías, cafeterías, tiendas y restaurantes, además de contar con su propia página web moderna para recibir pedidos directos.</div>
+• Primer Bucle ($0 Gratis): perfil con logo, 3 productos y 1 red enlazada.
+• Bucle Activo ($2.990 primer mes, luego $4.990/mes): hasta 20 productos + destacado en categoría.
+• Bucle Infinito ($5.990 primer mes, luego $9.990/mes): hasta 50 productos, contactos ilimitados y soporte prioritario.
+• Web + Bucle Activo ($15.000/mes desde mes 2, 1er mes gratis): si más adelante además quieren página web propia conectada a su WhatsApp.
+
+Pueden partir gratis en Primer Bucle sin compromiso 👉 https://breborn.cl</div>
           <div class="qr-actions">
-            <button class="btn btn-primary btn-copy-qr" data-copy-target="qrText-bucle">📋 Copiar Mensaje</button>
+            <button class="btn btn-primary btn-copy-qr" data-copy-target="qrText-bucle">📋 Copiar Planes Breborn</button>
             <a href="https://breborn.cl" target="_blank" rel="noopener" class="btn btn-secondary">🌐 Ver Breborn.cl</a>
           </div>
         </div>
@@ -258,18 +277,32 @@ El "Bucle Comercial" consiste en que todos los negocios de nuestra red se recomi
       </div>
 
       <div class="filters-row">
+        <!-- Estrategia / Track -->
+        <div class="filter-group">
+          <label for="trackFilter">Estrategia / Track:</label>
+          <select id="trackFilter" class="select-control">
+            <option value="ALL">Todos los tracks</option>
+            <option value="bucle">🌱 Track 1: Vitrina Primer Bucle ($0)</option>
+            <option value="web_top5">🎯 Track 2: Top 5 Demo a Medida</option>
+            <option value="web_gastro">🍽️ Track 2: Gastronomía Web</option>
+          </select>
+        </div>
+
         <!-- Rubro / Categoría -->
         <div class="filter-group">
           <label for="categoryFilter">Rubro / Categoría:</label>
           <select id="categoryFilter" class="select-control">
             <option value="ALL">Todas las categorías</option>
-            <option value="Peluquería y Belleza">💇 Peluquería y Belleza</option>
-            <option value="Cafetería">☕ Cafeterías</option>
-            <option value="Pastelería y Panadería">🥐 Pastelería y Panadería</option>
+            <option value="Artesanía y Diseño">🕯️ Artesanía y Diseño</option>
+            <option value="Arte e Ilustración">🎨 Arte e Ilustración</option>
+            <option value="Cosmética Natural">🌿 Cosmética Natural</option>
             <option value="Local de Comida / Restaurante">🍔 Locales de Comida / Restaurantes</option>
-            <option value="Comercio, Ropa y Tiendas">🛍️ Comercio, Ropa y Tiendas</option>
+            <option value="Cafetería">☕ Cafeterías</option>
+            <option value="Pastelería y Panadería">🥐 Pastelería y Repostería</option>
             <option value="Cafeterías y Restaurantes">🍽️ Cafeterías y Restaurantes</option>
+            <option value="Comercio, Ropa y Tiendas">🛍️ Tiendas, Flores y Mascotas</option>
             <option value="Salud y Bienestar">🩺 Salud y Bienestar</option>
+            <option value="Peluquería y Belleza">💇 Peluquería y Belleza (Histórico)</option>
           </select>
         </div>
 
@@ -278,21 +311,24 @@ El "Bucle Comercial" consiste en que todos los negocios de nuestra red se recomi
           <label for="cityFilter">Comuna:</label>
           <select id="cityFilter" class="select-control">
             <option value="ALL">Todas las comunas</option>
-            <option value="Limache">Limache</option>
             <option value="Viña del Mar">Viña del Mar</option>
             <option value="Valparaíso">Valparaíso</option>
             <option value="Concón">Concón</option>
             <option value="Quilpué">Quilpué</option>
+            <option value="Villa Alemana">Villa Alemana</option>
+            <option value="Limache">Limache</option>
           </select>
         </div>
 
-        <!-- WhatsApp -->
+        <!-- Canal / Contacto -->
         <div class="filter-group">
-          <label for="waFilter">Filtro WhatsApp:</label>
+          <label for="waFilter">Canal disponible:</label>
           <select id="waFilter" class="select-control">
+            <option value="CONTACTABLE" selected>💬 WhatsApp o Instagram</option>
+            <option value="WA_ONLY">📱 Solo con WhatsApp (+569)</option>
+            <option value="IG_ONLY">📸 Con Instagram (@)</option>
             <option value="ALL">Todos los locales</option>
-            <option value="WA_ONLY" selected>💬 Solo con WhatsApp (+569)</option>
-            <option value="NO_WA">Sin WhatsApp detectado</option>
+            <option value="NO_WA">Sin WhatsApp</option>
           </select>
         </div>
 
@@ -373,11 +409,12 @@ El "Bucle Comercial" consiste en que todos los negocios de nuestra red se recomi
       </div>
       <div class="modal-footer">
         <button id="copyModalPitch" class="btn btn-secondary">📋 Copiar Texto</button>
+        <a id="openModalIg" href="#" target="_blank" rel="noopener" class="btn btn-instagram" style="display: none;">📸 Abrir Instagram</a>
         <a id="sendModalWa" href="#" class="btn btn-whatsapp">📱 Abrir en WhatsApp Escritorio</a>
       </div>
     </div>
   </div>
 
-  <script src="app.js?v=5.1"></script>
+  <script src="app.js?v=5.2"></script>
 </body>
 </html>

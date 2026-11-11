@@ -1063,3 +1063,38 @@ body.theme-light .badge-contacted { color: #15803d; }
 body.theme-light .badge-interested { color: #b45309; }
 body.theme-light .badge-loop { color: #7e22ce; }
 body.theme-light .badge-declined { color: #b91c1c; }
+
+.btn-instagram {
+  background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+  color: #ffffff !important;
+  font-weight: 700;
+  border: none;
+}
+
+.btn-instagram:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.badge-track-bucle {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.badge-track-top5 {
+  background: rgba(249, 115, 22, 0.18);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.badge-track-gastro {
+  background: rgba(59, 130, 246, 0.16);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+body.theme-light .badge-track-bucle { color: #047857; }
+body.theme-light .badge-track-top5 { color: #c2410c; }
+body.theme-light .badge-track-gastro { color: #1d4ed8; }
