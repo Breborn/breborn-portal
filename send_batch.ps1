@@ -3,6 +3,7 @@ param(
     [int]$DelaySec = 25,
     [string]$City = "",
     [string]$Track = "",
+    [string]$Category = "",
     [string]$LeadIds = "",
     [switch]$All,
     [switch]$OnlySinWeb,
@@ -233,6 +234,7 @@ $leads = $rawJson | ConvertFrom-Json
 $idFilterSet = if ([string]::IsNullOrWhiteSpace($LeadIds)) { @() } else { $LeadIds -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } }
 $cityFilterSet = if ([string]::IsNullOrWhiteSpace($City)) { @() } else { $City -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } }
 $trackFilterSet = if ([string]::IsNullOrWhiteSpace($Track)) { @() } else { $Track -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } }
+$categoryFilterSet = if ([string]::IsNullOrWhiteSpace($Category)) { @() } else { $Category -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } }
 # Select EVERYTHING on the page with WhatsApp that has NOT had a message sent yet
 $pending = @($leads | Where-Object {
     $_.has_whatsapp -and
@@ -240,6 +242,7 @@ $pending = @($leads | Where-Object {
     ((-not $OnlySinWeb) -or (-not $_.has_website)) -and
     (($cityFilterSet.Count -eq 0) -or ($cityFilterSet -contains $_.city)) -and
     (($trackFilterSet.Count -eq 0) -or ($trackFilterSet -contains $_.track)) -and
+    (($categoryFilterSet.Count -eq 0) -or ($categoryFilterSet -contains $_.category)) -and
     (($idFilterSet.Count -eq 0) -or ($idFilterSet -contains $_.id)) -and
     ($_.status -ne 'Mensaje Enviado' -and $_.status -ne 'Interesado' -and $_.status -ne 'En el Bucle' -and $_.status -ne 'No Interesado' -and $_.status -ne 'Sin WhatsApp')
 })
