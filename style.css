@@ -1095,6 +1095,13 @@ body.theme-light .badge-declined { color: #b91c1c; }
   border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
+.badge-track-web-ig {
+  background: rgba(236, 72, 153, 0.18);
+  color: #f472b6;
+  border: 1px solid rgba(236, 72, 153, 0.42);
+}
+
 body.theme-light .badge-track-bucle { color: #047857; }
 body.theme-light .badge-track-top5 { color: #c2410c; }
 body.theme-light .badge-track-gastro { color: #1d4ed8; }
+body.theme-light .badge-track-web-ig { color: #be185d; }
